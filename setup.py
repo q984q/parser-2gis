@@ -116,7 +116,8 @@ if __name__ == '__main__':
                 ) + [
                     # GUI tests need PySimpleGUI (they are skipped without it)
                     "PySimpleGUI>=4.60.5.1,<5",
-                    "pytest>=6.2,<8",
+                    "flake8>=6,<8",
+                    "pytest>=6.2,<9",
                     "tox>=3.5,<4",
                     "pre-commit>=2.6",
                     "wheel>=0.36.2,<0.38",

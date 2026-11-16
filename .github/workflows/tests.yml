@@ -19,8 +19,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # 3.8 is dropped: actions/setup-python cannot provision it on ubuntu-24.04
-        python-version: ['3.9', '3.10', '3.11', '3.12']
+        # Exact patch versions are pinned: ubuntu-24.04 runners only have
+        # builds for certain patches, and 3.8 has none at all.
+        python-version: ['3.9.23', '3.10.17', '3.11.13', '3.12.11']
 
     steps:
     - uses: actions/checkout@v4
