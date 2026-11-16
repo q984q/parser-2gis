@@ -45,6 +45,46 @@
   pip install parser-2gis[gui]
   ```
 
+> На Linux пакет `tkinter` ставится отдельно и нужен для GUI:
+> `sudo apt install python3-tk` (Debian/Ubuntu), `sudo dnf install python3-tkinter` (Fedora).
+
+## ▶️ Запуск
+
+**GUI (тёмная тема).** Запустите программу без аргументов — откроется окно:
+
+```bash
+parser-2gis
+# или, если пакет не установлен глобально:
+python -m parser_2gis
+```
+
+**CLI.** Передайте ссылки, путь и формат:
+
+```bash
+parser-2gis -i "https://2gis.ru/moscow/search/Аптеки" -o result.csv -f csv
+```
+
+Несколько ссылок и другие форматы:
+
+```bash
+parser-2gis \
+  -i "https://2gis.ru/moscow/search/Аптеки" "https://2gis.ru/spb/search/Кофейни" \
+  -o result.xlsx -f xlsx --chrome.headless yes --parser.max-records 100
+```
+
+Справка по всем опциям: `parser-2gis --help`.
+
+**Из исходников.** Для разработки удобно поставить пакет в режиме редактирования:
+
+```bash
+git clone https://github.com/q984q/parser-2gis.git
+cd parser-2gis
+python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install -e .[gui,dev]
+python -m parser_2gis          # GUI
+python -m pytest tests -q      # тесты
+```
+
 ## 📖 Документация
 Описание работы доступно на [вики](https://github.com/interlark/parser-2gis/wiki).
 
