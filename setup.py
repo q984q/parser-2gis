@@ -105,7 +105,8 @@ if __name__ == '__main__':
         ],
         extras_require={
             'gui': [
-                'PySimpleGUI==4.59.0',
+                # 4.60.5.1 is the last freely available 4.x release on PyPI
+                'PySimpleGUI>=4.60.5.1,<5',
             ],
             'dev': (
                 (
@@ -113,6 +114,8 @@ if __name__ == '__main__':
                     if sys.platform.startswith("win")
                     else ["pyinstaller>=6.6.0"]
                 ) + [
+                    # GUI tests need PySimpleGUI (they are skipped without it)
+                    "PySimpleGUI>=4.60.5.1,<5",
                     "pytest>=6.2,<8",
                     "tox>=3.5,<4",
                     "pre-commit>=2.6",
