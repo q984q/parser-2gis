@@ -1,3 +1,12 @@
+"""End-to-end parser tests.
+
+These tests drive a real Chrome browser against the live 2GIS website,
+so they need both the browser and network access. They are skipped by
+default and only run when `PARSER_2GIS_INTEGRATION=1` is set:
+
+    PARSER_2GIS_INTEGRATION=1 pytest tests/test_parser.py
+"""
+
 import csv
 import json
 import os
@@ -6,6 +15,13 @@ from tempfile import TemporaryDirectory
 
 import pytest
 from parser_2gis import main as parser_main
+
+INTEGRATION_ENABLED = os.environ.get('PARSER_2GIS_INTEGRATION') == '1'
+
+pytestmark = pytest.mark.skipif(
+    not INTEGRATION_ENABLED,
+    reason='Набор требует Chrome и сеть: запустите с PARSER_2GIS_INTEGRATION=1',
+)
 
 
 def check_csv_result(result_path, num_records):

@@ -72,7 +72,7 @@ class ChromeRemote:
 
     def _create_tab(self) -> pychrome.Tab:
         """Create Chrome Tab."""
-        resp = requests.put('%s/json/new' % (self._dev_url), json=True)         
+        resp = requests.put('%s/json/new' % (self._dev_url), json=True)
         return pychrome.Tab(**resp.json())
 
     def _close_tab(self, tab: pychrome.Tab) -> None:

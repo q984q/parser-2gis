@@ -17,14 +17,21 @@ jobs:
     runs-on: ubuntu-latest
 
     strategy:
+      fail-fast: false
       matrix:
-        python-version: ['3.8', '3.9', '3.10', '3.11']
+        # 3.8 is dropped: actions/setup-python cannot provision it on ubuntu-24.04
+        python-version: ['3.9', '3.10', '3.11', '3.12']
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
+
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends python3-tk xvfb
 
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v3
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
 
@@ -34,30 +41,37 @@ jobs:
         python -m pip install -e .[dev]
         python -m pip install tox-gh-actions
 
+    - name: Lint
+      run: |
+        python -m flake8 parser_2gis tests
+
+    # xvfb gives tkinter a display, so GUI tests run instead of being skipped
     - name: Test with tox
-      run: tox
+      run: xvfb-run -a tox
 
   test-os:
     name: Test OS
 
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
 
     runs-on: ${{ matrix.os }}
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Set up Python
-      uses: actions/setup-python@v3
+      uses: actions/setup-python@v5
       with:
-        python-version: "3.10"
+        python-version: "3.11"
 
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         python -m pip install -e .[dev]
 
+    # GUI layer is optional: without PySimpleGUI the GUI tests are skipped
     - name: Test on ${{ matrix.os }}
       run: pytest -v

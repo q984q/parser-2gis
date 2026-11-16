@@ -9,6 +9,34 @@ from parser_2gis.gui.app import plural_links
 requires_gui = pytest.mark.skipif(not GUI_ENABLED, reason='GUI (PySimpleGUI + tkinter) is not installed')
 
 
+def luminance(color):
+    """Relative brightness of a `#RRGGBB` color."""
+    value = color.lstrip('#')
+    red, green, blue = (int(value[i:i + 2], 16) for i in (0, 2, 4))
+    return red * 0.299 + green * 0.587 + blue * 0.114
+
+
+def build_without_window(layout):
+    """Validate a layout without creating a real window.
+
+    PySimpleGUI checks the layout in `Window.__init__` and shows a modal
+    error popup on failure, which would hang a headless CI run.
+    Instantiating the window with `_Show` stubbed out keeps the validation
+    but skips any tkinter interaction.
+    """
+    import PySimpleGUI as sg
+    from PySimpleGUI.PySimpleGUI import Window
+
+    # Guard against an accidentally created window
+    original_show = Window._Show
+    Window._Show = lambda self: None
+    try:
+        window = sg.Window('test', layout, background_color=theme.BACKGROUND)
+        assert window is not None
+    finally:
+        Window._Show = original_show
+
+
 @pytest.mark.parametrize('count, expected', [
     (0, '0 ссылок'),
     (1, '1 ссылка'),
@@ -29,11 +57,6 @@ def test_plural_links(count, expected):
 
 def test_theme_palette_is_dark():
     """The theme must stay dark: background is way darker than text."""
-    def luminance(color):
-        value = color.lstrip('#')
-        red, green, blue = (int(value[i:i + 2], 16) for i in (0, 2, 4))
-        return red * 0.299 + green * 0.587 + blue * 0.114
-
     assert luminance(theme.BACKGROUND) < 40
     assert luminance(theme.BACKGROUND_DEEP) < luminance(theme.BACKGROUND)
     assert luminance(theme.SURFACE) > luminance(theme.BACKGROUND)
@@ -43,11 +66,6 @@ def test_theme_palette_is_dark():
 
 def test_theme_contrast_of_accent_button():
     """Text on the accent button must be readable."""
-    def luminance(color):
-        value = color.lstrip('#')
-        red, green, blue = (int(value[i:i + 2], 16) for i in (0, 2, 4))
-        return red * 0.299 + green * 0.587 + blue * 0.114
-
     assert abs(luminance(theme.ACCENT) - luminance(theme.ACCENT_TEXT)) > 100
     assert abs(luminance(theme.DANGER) - luminance(theme.DANGER_TEXT)) > 100
 
@@ -87,16 +105,16 @@ def test_window_size_fits_small_screen():
     assert height >= theme.MIN_WINDOW_HEIGHT
 
 
-@requires_gui
-def test_apply_theme_is_idempotent():
-    theme.apply_theme()
-    first_family = theme.FONT_FAMILY
-    theme.apply_theme()
-    assert theme.FONT_FAMILY == first_family
+def test_url_query_encode_keeps_cyrillic():
+    from parser_2gis.gui.utils import url_query_encode
+
+    assert url_query_encode('кофейни') == 'кофейни'
+    # Spaces and cyrillic letters are allowed as is, special chars are escaped
+    assert url_query_encode('кафе & бар') == 'кафе %26 бар'
 
 
-@requires_gui
 def test_main_layout_builds_for_any_url_count():
+    pytest.importorskip('PySimpleGUI')
     from parser_2gis.config import Configuration
     from parser_2gis.gui.app import build_layout
 
@@ -108,8 +126,8 @@ def test_main_layout_builds_for_any_url_count():
         assert len(layout) > 3
 
 
-@requires_gui
 def test_settings_and_editor_layouts_build():
+    pytest.importorskip('PySimpleGUI')
     from parser_2gis.config import Configuration
     from parser_2gis.gui.settings import build_layout as build_settings
     from parser_2gis.gui.urls_editor import build_layout as build_editor
@@ -118,3 +136,28 @@ def test_settings_and_editor_layouts_build():
 
     assert build_settings(config)
     assert build_editor()
+
+
+@requires_gui
+def test_apply_theme_is_idempotent():
+    theme.apply_theme()
+    first_family = theme.FONT_FAMILY
+    theme.apply_theme()
+    assert theme.FONT_FAMILY == first_family
+
+
+@requires_gui
+def test_windows_are_valid_pysimplegui_layouts():
+    """Layouts must be accepted by PySimpleGUI without opening a window."""
+    from parser_2gis.config import Configuration
+    from parser_2gis.gui.app import build_layout as build_main
+    from parser_2gis.gui.settings import build_layout as build_settings
+    from parser_2gis.gui.urls_editor import build_layout as build_editor
+
+    theme.apply_theme()
+    config = Configuration()
+
+    for layout in (build_main(['https://2gis.ru/moscow/search/x'], 'r.csv', 'csv', config),
+                   build_settings(config),
+                   build_editor()):
+        build_without_window(layout)

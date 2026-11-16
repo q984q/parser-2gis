@@ -8,14 +8,11 @@ jobs:
     name: Development Build
 
     strategy:
+      fail-fast: false
       matrix:
         include:
-          - os: ubuntu-20.04
+          - os: ubuntu-22.04
             dist: linux
-            ext:
-
-          - os: macos-12
-            dist: macos
             ext:
 
           - os: macos-14
@@ -29,27 +26,24 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Set up Python 3.11
-      uses: actions/setup-python@v3
+      uses: actions/setup-python@v5
       with:
-        python-version: "3.11.3"
+        python-version: "3.11"
 
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         python -m pip install -e .[gui,dev]
-        # Replace pydantic with no-binary version to lightweight target binary a bit
-        # python -m pip uninstall -y pydantic
-        # python -m pip install --no-binary pydantic pydantic>=1.9.0
 
     - name: Build standalone app
       run: |
         python setup.py build_standalone
 
     - name: Upload distributive
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: Parser2GIS-dev-${{matrix.dist}}
         path: dist/Parser2GIS${{matrix.ext}}
