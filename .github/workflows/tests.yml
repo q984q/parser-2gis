@@ -14,14 +14,15 @@ jobs:
   test-python:
     name: Test Python
 
-    runs-on: ubuntu-latest
+    # Pinned: `ubuntu-latest` now points to Ubuntu 26.04, which has no
+    # prebuilt Python 3.9-3.12, so setup-python fails there.
+    runs-on: ubuntu-22.04
 
     strategy:
       fail-fast: false
       matrix:
-        # Exact patch versions are pinned: ubuntu-24.04 runners only have
-        # builds for certain patches, and 3.8 has none at all.
-        python-version: ['3.9.23', '3.10.17', '3.11.13', '3.12.11']
+        # 3.8 is dropped, 3.12 added
+        python-version: ['3.9', '3.10', '3.11', '3.12']
 
     steps:
     - uses: actions/checkout@v4
@@ -56,7 +57,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-22.04, windows-latest, macos-latest]
 
     runs-on: ${{ matrix.os }}
 
