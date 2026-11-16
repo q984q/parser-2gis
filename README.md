@@ -74,6 +74,20 @@ parser-2gis \
 
 Справка по всем опциям: `parser-2gis --help`.
 
+**Совсем без подготовки (Python уже установлен).** Скачайте из репозитория файл
+`run_parser_2gis.py` и запустите его — он сам скачает проект, создаст отдельное окружение,
+поставит зависимости и откроет окно:
+
+```bash
+python run_parser_2gis.py           # GUI
+python run_parser_2gis.py --update  # обновить и запустить снова
+python run_parser_2gis.py --cli -i "URL" -o result.csv -f csv
+```
+
+Рядом лежат ярлыки для запуска двойным кликом: `run_parser_2gis.bat` (Windows) и
+`run_parser_2gis.command` (macOS). Всё складывается в `~/.parser-2gis-runner`,
+системный Python не затрагивается.
+
 **Из исходников.** Для разработки удобно поставить пакет в режиме редактирования:
 
 ```bash
