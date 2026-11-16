@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Parser 2GIS — превью тёмной темы</title>
+<link rel="icon" href="icon.png">
+<style>
+  :root{
+    --bg:#0F1512;        /* theme.BACKGROUND */
+    --bg-deep:#0A0F0D;   /* theme.BACKGROUND_DEEP */
+    --surface:#151D19;   /* theme.SURFACE */
+    --surface-hover:#1D2823;
+    --border:#243129;
+    --border-strong:#34463C;
+    --text:#E8F0EC;
+    --text-muted:#8CA69A;
+    --text-disabled:#5C7266;
+    --accent:#46D07F;
+    --accent-hover:#5BE194;
+    --accent-text:#042213;
+    --accent-soft:#17352A;
+    --danger:#E4675C;
+    --danger-hover:#F07C71;
+    --danger-text:#1B0503;
+    --warning:#E5A94A;
+    --log-text:#C6D6CD;
+    --log-err-bg:#3A1713;
+    --log-err-text:#FFB4A8;
+    --log-warn-bg:#3A2C12;
+    --log-warn-text:#FFD79B;
+    --sel-bg:#1E4A37;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:radial-gradient(1100px 620px at 50% -8%, #16211C 0%, #0B100D 58%, #080C0A 100%);
+    color:var(--text);
+    font-family:"Inter","Segoe UI","Helvetica Neue",Arial,sans-serif;
+    font-size:13px; line-height:1.45;
+    padding:28px 20px 64px;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1240px;margin:0 auto}
+  .page-head{display:flex;align-items:center;gap:16px;margin:0 0 6px}
+  .page-head img{width:190px;height:auto;display:block}
+  .page-head .meta{color:var(--text-disabled);font-size:12px}
+  .page-note{color:var(--text-muted);font-size:12.5px;margin:0 0 26px;max-width:820px}
+  .page-note b{color:var(--text);font-weight:600}
+  .grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:26px;align-items:start}
+  @media (max-width:1080px){.grid{grid-template-columns:minmax(0,1fr)}}
+  .stack{display:flex;flex-direction:column;gap:22px;min-width:0}
+
+  /* window chrome */
+  .win{
+    background:var(--bg);border:1px solid var(--border);border-radius:14px;
+    box-shadow:0 22px 48px rgba(0,0,0,.5), 0 2px 0 rgba(255,255,255,.02) inset;
+    overflow:hidden;
+  }
+  .win-bar{
+    display:flex;align-items:center;gap:8px;padding:9px 13px;
+    background:linear-gradient(#131B17,#0F1512);
+    border-bottom:1px solid var(--border);
+  }
+  .dot{width:11px;height:11px;border-radius:50%;background:#2A3831}
+  .dot.r{background:#4A2B28}.dot.y{background:#4A4022}.dot.g{background:#24452F}
+  .win-title{margin-left:8px;color:var(--text-disabled);font-size:11.5px;letter-spacing:.02em}
+  .win-body{padding:18px 18px 16px}
+
+  .card{
+    background:var(--surface);border-radius:11px;padding:14px 16px 16px;margin-bottom:12px;
+    border:1px solid rgba(255,255,255,.035);
+  }
+  .card-title{
+    color:var(--text-muted);font-size:10px;font-weight:700;letter-spacing:.09em;
+    text-transform:uppercase;margin:0 0 10px;display:flex;align-items:center;
+    justify-content:space-between;gap:10px;
+  }
+  .card-title .state{color:var(--accent);font-weight:600;letter-spacing:0;text-transform:none;font-size:11px}
+
+  .row{display:flex;align-items:center;gap:8px}
+  .row + .row{margin-top:10px}
+  .row.wrap{flex-wrap:wrap}
+  .grow{flex:1 1 auto;min-width:0}
+
+  .input{
+    background:var(--bg-deep);border:1px solid transparent;border-radius:8px;
+    padding:9px 11px;color:var(--text);font-size:12.5px;min-width:0;
+    font-family:inherit;width:100%;
+  }
+  .input::placeholder{color:var(--text-disabled)}
+  .input.muted{color:var(--text-muted)}
+  .input:focus{outline:none;border-color:var(--accent-soft);box-shadow:0 0 0 2px rgba(70,208,127,.15)}
+  select.input{appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--text-muted) 50%),linear-gradient(135deg,var(--text-muted) 50%,transparent 50%);
+    background-position:calc(100% - 15px) 52%, calc(100% - 10px) 52%;background-size:5px 5px,5px 5px;background-repeat:no-repeat;padding-right:28px}
+  .hint{color:var(--text-disabled);font-size:11.5px;margin-top:8px}
+
+  .btn{
+    border:0;border-radius:8px;padding:9px 14px;font:inherit;font-size:12.5px;font-weight:600;
+    cursor:pointer;white-space:nowrap;background:var(--surface-hover);color:var(--text);
+    transition:background .15s ease,color .15s ease;
+  }
+  .btn:hover{background:var(--border-strong)}
+  .btn.primary{background:var(--accent);color:var(--accent-text)}
+  .btn.primary:hover{background:var(--accent-hover)}
+  .btn.danger{background:var(--danger);color:var(--danger-text)}
+  .btn.danger:hover{background:var(--danger-hover)}
+  .btn.ghost{background:transparent;color:var(--text-muted);font-weight:500}
+  .btn.ghost:hover{background:var(--surface-hover);color:var(--text)}
+  .btn:disabled{background:var(--surface);color:var(--text-disabled);cursor:default}
+
+  .app-head{display:flex;align-items:center;gap:12px;padding-bottom:14px;border-bottom:1px solid var(--border);margin-bottom:16px}
+  .app-head img{width:168px;height:auto;display:block}
+  .app-head .ver{color:var(--text-disabled);font-size:11px;margin-left:auto}
+  .app-head .settings{margin-left:auto}
+
+  .footer{display:flex;align-items:center;gap:10px;padding-top:14px;border-top:1px solid var(--border);margin-top:16px}
+  .footer .hint{color:var(--text-muted);font-size:11.5px;margin:0}
+
+  .spinner{
+    width:18px;height:18px;border-radius:50%;
+    border:2px solid rgba(70,208,127,.18);border-top-color:var(--accent);
+    animation:spin 900ms linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* log */
+  .log{
+    background:var(--bg-deep);border-radius:8px;padding:10px 12px;height:172px;overflow:auto;
+    font-family:"JetBrains Mono","DejaVu Sans Mono",Consolas,monospace;font-size:11.5px;line-height:1.65;
+    color:var(--log-text);
+  }
+  .log .t{color:var(--text-disabled)}
+  .log .ok{color:var(--accent)}
+  .log .warn{background:var(--log-warn-bg);color:var(--log-warn-text);display:block;padding:0 4px;border-radius:3px;margin:1px -4px}
+  .log .err{background:var(--log-err-bg);color:var(--log-err-text);display:block;padding:0 4px;border-radius:3px;margin:1px -4px}
+
+  /* checkboxes */
+  .check{display:flex;align-items:center;gap:9px;padding:5px 0;font-size:12.5px;color:var(--text)}
+  .check input{
+    appearance:none;width:15px;height:15px;border-radius:4px;margin:0;
+    background:var(--border-strong);border:1px solid transparent;position:relative;cursor:pointer;
+    flex:0 0 auto;
+  }
+  .check input:checked{background:var(--accent)}
+  .check input:checked::after{
+    content:"";position:absolute;left:4px;top:1px;width:5px;height:9px;
+    border:2px solid var(--accent-text);border-top:0;border-left:0;transform:rotate(42deg);
+  }
+
+  .field-row{display:flex;align-items:center;gap:12px;padding:5px 0}
+  .field-row .lbl{color:var(--text-muted);font-size:12.5px;flex:1 1 auto}
+  .field-row .input{width:92px;flex:0 0 auto;text-align:right}
+
+  /* tree */
+  .tree{background:var(--bg-deep);border-radius:8px;padding:6px;height:230px;overflow:auto;font-size:12.5px}
+  .tree .node{display:flex;align-items:center;gap:7px;padding:5px 8px;border-radius:6px;color:var(--text);cursor:default}
+  .tree .node:hover{background:#121A16}
+  .tree .node.sel{background:var(--sel-bg);color:#EAF6EF}
+  .tree .node.lvl1{padding-left:24px;color:#C9DAD0}
+  .tree .node.lvl2{padding-left:42px;color:#AFC6BA}
+  .tree .caret{color:var(--text-disabled);font-size:10px;width:9px}
+  .tree .ico{opacity:.85}
+
+  /* city grid */
+  .cities{background:var(--surface);border-radius:8px;padding:12px 14px;height:150px;overflow:auto;
+    columns:3;column-gap:18px}
+  @media (max-width:520px){.cities{columns:2}}
+  .cities .check{break-inside:avoid;font-size:12px;padding:3px 0}
+
+  .split{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media (max-width:520px){.split{grid-template-columns:1fr}}
+
+  .caption-block{color:var(--text-muted);font-size:12px;margin:-2px 0 14px}
+  h3.sec{margin:0 0 12px;font-size:15px;font-weight:600;letter-spacing:-.01em}
+  .pill{display:inline-block;padding:2px 8px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-size:11px;font-weight:600}
+
+  /* error window */
+  .err-win{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:20px 22px;box-shadow:0 18px 40px rgba(0,0,0,.45)}
+  .err-win .kicker{color:var(--danger);font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;margin:0 0 10px}
+  .err-win p{margin:0 0 18px;font-size:12.5px;color:var(--text)}
+
+  /* palette strip */
+  .palette{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+  .sw{width:104px}
+  .sw i{display:block;height:34px;border-radius:7px;border:1px solid rgba(255,255,255,.06)}
+  .sw span{display:block;color:var(--text-muted);font-size:10.5px;margin-top:5px;font-family:"JetBrains Mono",monospace}
+  .sw b{display:block;color:var(--text);font-size:11px;font-weight:600;letter-spacing:.01em}
+  .legend{color:var(--text-disabled);font-size:11px;margin:16px 0 0}
+  .label{color:var(--text-muted);font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;font-weight:700;margin:0 0 10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="page-head">
+    <img src="logo_dark.png" alt="Parser 2GIS">
+    <div class="meta">Тёмная тема · статичное превью вёрстки окон</div>
+  </div>
+  <p class="page-note">
+    Макет повторяет один-в-один токены из <b>parser_2gis/gui/theme.py</b> и структуру окон из
+    <b>gui/app.py</b>, <b>gui/urls_editor.py</b>, <b>gui/urls_generator.py</b>, <b>gui/rubric_selector.py</b>,
+    <b>gui/settings.py</b>, <b>gui/error_popup.py</b>. Цвета, отступы и типографика здесь те же,
+    что и в реальном приложении на Tkinter/PySimpleGUI.
+  </p>
+
+  <div class="grid">
+    <!-- ============================= LEFT ============================= -->
+    <div class="stack">
+
+      <!-- MAIN WINDOW -->
+      <div class="win">
+        <div class="win-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+          <span class="win-title">Парсер 2ГИС</span></div>
+        <div class="win-body">
+          <div class="app-head">
+            <img src="logo_dark.png" alt="Parser 2GIS">
+            <button class="btn ghost settings">Настройки</button>
+            <span class="ver">v1.2.1</span>
+          </div>
+
+          <div class="card">
+            <div class="card-title">Ссылка на выдачу 2ГИС</div>
+            <div class="row">
+              <input class="input grow" value="https://2gis.ru/moscow/search/кофейни/filters/sort=name">
+              <button class="btn">Ссылки</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">Результат</div>
+            <div class="row">
+              <select class="input" style="width:88px;flex:0 0 auto">
+                <option>csv</option><option>xlsx</option><option>json</option>
+              </select>
+              <input class="input grow muted" value="/home/user/кофейни_москва.csv">
+              <button class="btn">Обзор</button>
+            </div>
+            <div class="hint">Формат файла подставляется автоматически при выборе типа.</div>
+          </div>
+
+          <div class="card" style="margin-bottom:0">
+            <div class="card-title">Журнал <span class="state">Идёт парсинг…</span></div>
+            <div class="log">
+              <div><span class="t">12:04:31.120</span> | Парсинг запущен.</div>
+              <div><span class="t">12:04:31.124</span> | Парсинг ссылки https://2gis.ru/moscow/search/кофейни/filters/sort=name</div>
+              <div><span class="t">12:04:33.402</span> | <span class="ok">Кофемания</span> · Москва, ул. Тверская, 7</div>
+              <div><span class="t">12:04:34.010</span> | <span class="ok">Шоколадница</span> · Москва, ул. Арбат, 12</div>
+              <div><span class="t">12:04:35.887</span> | <span class="ok">Даблби</span> · Москва, Покровка, 31</div>
+              <div class="warn"><span class="t">12:04:36.221</span> | Часы работы не найдены для «Surf Coffee»</div>
+              <div><span class="t">12:04:37.440</span> | <span class="ok">Brikel</span> · Москва, Большая Дмитровка, 9</div>
+              <div class="err"><span class="t">12:04:38.902</span> | Ошибка во время работы парсера: timeout</div>
+              <div><span class="t">12:04:39.005</span> | Парсинг ссылки завершён.</div>
+            </div>
+          </div>
+
+          <div class="footer">
+            <div class="spinner"></div>
+            <p class="hint">Парсинг запущен…</p>
+            <div class="grow"></div>
+            <button class="btn danger">Выход</button>
+            <button class="btn">Стоп</button>
+            <button class="btn primary" disabled style="display:none">Запуск</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ERROR POPUP -->
+      <div class="err-win">
+        <div class="win-bar" style="margin:-20px -22px 16px;border-radius:12px 12px 0 0">
+          <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+          <span class="win-title">Ошибка</span>
+        </div>
+        <p class="kicker">Что-то пошло не так</p>
+        <p>Расширение результирующего файла должно быть&nbsp;*.csv!</p>
+        <button class="btn danger">Закрыть</button>
+      </div>
+
+      <!-- SETTINGS -->
+      <div class="win">
+        <div class="win-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+          <span class="win-title">Настройки</span></div>
+        <div class="win-body">
+          <h3 class="sec">Настройки</h3>
+          <div class="caption-block">Параметры сохраняются и применяются к следующим запускам.</div>
+
+          <div class="card">
+            <div class="card-title">Браузер</div>
+            <label class="check"><input type="checkbox" checked> Отключить изображения</label>
+            <label class="check"><input type="checkbox"> Запускать развёрнутым</label>
+            <label class="check"><input type="checkbox"> Скрытый режим</label>
+            <div class="field-row"><span class="lbl">Лимит RAM, МБ</span><input class="input" value="4096"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">Парсер</div>
+            <label class="check"><input type="checkbox" checked> Показывать города</label>
+            <label class="check"><input type="checkbox" checked> Точные совпадения</label>
+            <div class="field-row"><span class="lbl">Задержка кликов, мс</span><input class="input" value="0"></div>
+            <div class="field-row"><span class="lbl">Лимит записей</span><input class="input" value="1200"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">Таблицы CSV / XLSX</div>
+            <label class="check"><input type="checkbox" checked> Добавить колонку «Рубрики»</label>
+            <label class="check"><input type="checkbox" checked> Добавлять комментарии</label>
+            <label class="check"><input type="checkbox" checked> Удалить пустые колонки</label>
+            <label class="check"><input type="checkbox" checked> Удалить дубликаты</label>
+            <div class="field-row"><span class="lbl">Сложные колонки</span><input class="input" value="3"></div>
+          </div>
+
+          <div class="footer" style="border-top:0;padding-top:6px;margin-top:2px">
+            <button class="btn primary">Сохранить</button>
+            <button class="btn">Отмена</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ============================= RIGHT ============================= -->
+    <div class="stack">
+
+      <!-- URLS EDITOR -->
+      <div class="win">
+        <div class="win-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+          <span class="win-title">Ссылки</span></div>
+        <div class="win-body">
+          <h3 class="sec">Список ссылок</h3>
+          <div class="caption-block">Каждая ссылка должна быть на отдельной строке.</div>
+          <div class="log" style="height:210px">
+            <div><span class="t">1</span>&nbsp;&nbsp;https://2gis.ru/moscow/search/кофейни/filters/sort=name</div>
+            <div><span class="t">2</span>&nbsp;&nbsp;https://2gis.ru/spb/search/кофейни/filters/sort=name</div>
+            <div><span class="t">3</span>&nbsp;&nbsp;https://2gis.ru/kazan/search/кофейни/filters/sort=name</div>
+            <div><span class="t">4</span>&nbsp;&nbsp;https://2gis.ru/novosibirsk/search/кофейни/filters/sort=name</div>
+            <div><span class="t">5</span>&nbsp;&nbsp;https://2gis.ru/ekaterinburg/search/кофейни/filters/sort=name</div>
+            <div><span class="t">6</span>&nbsp;&nbsp;</div>
+          </div>
+          <div class="footer">
+            <button class="btn primary">Готово</button>
+            <button class="btn">Сгенерировать</button>
+            <button class="btn">Отмена</button>
+            <span class="hint" style="margin-left:6px">Ссылок: 5</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- URLS GENERATOR -->
+      <div class="win">
+        <div class="win-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+          <span class="win-title">Сгенерировать ссылки</span></div>
+        <div class="win-body">
+          <h3 class="sec">Генератор ссылок</h3>
+          <div class="caption-block">Выберите города — ссылки добавятся в редактор списка.</div>
+
+          <div class="card">
+            <div class="card-title">Запрос</div>
+            <input class="input" value="кофейни">
+          </div>
+
+          <div class="card">
+            <div class="card-title">Страна и рубрика</div>
+            <div class="row"><select class="input"><option>Россия</option><option>Казахстан</option></select></div>
+            <div class="row" style="margin-top:10px">
+              <span style="color:var(--text-muted);font-size:12.5px">Рубрика</span>
+              <input class="input grow muted" value="Кофейни" readonly>
+              <button class="btn">Выбрать</button>
+            </div>
+          </div>
+
+          <div class="card" style="margin-bottom:0">
+            <div class="card-title">Города <span class="state" style="color:var(--text-muted)">Выбрано городов: 3</span></div>
+            <div class="cities">
+              <label class="check"><input type="checkbox" checked> Москва</label>
+              <label class="check"><input type="checkbox"> Санкт-Петербург</label>
+              <label class="check"><input type="checkbox" checked> Новосибирск</label>
+              <label class="check"><input type="checkbox"> Екатеринбург</label>
+              <label class="check"><input type="checkbox"> Казань</label>
+              <label class="check"><input type="checkbox" checked> Нижний Новгород</label>
+              <label class="check"><input type="checkbox"> Челябинск</label>
+              <label class="check"><input type="checkbox"> Самара</label>
+              <label class="check"><input type="checkbox"> Омск</label>
+              <label class="check"><input type="checkbox"> Ростов-на-Дону</label>
+              <label class="check"><input type="checkbox"> Уфа</label>
+              <label class="check"><input type="checkbox"> Красноярск</label>
+            </div>
+          </div>
+
+          <div class="footer">
+            <span class="hint">Выбрано городов: 3</span>
+            <div class="grow"></div>
+            <button class="btn">Снять выделение</button>
+            <button class="btn">Выделить всё</button>
+            <button class="btn primary">Готово</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- RUBRIC SELECTOR -->
+      <div class="win">
+        <div class="win-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+          <span class="win-title">Выбор рубрики</span></div>
+        <div class="win-body">
+          <h3 class="sec">Выбор рубрики</h3>
+          <div class="caption-block">Начните вводить название — дерево отфильтруется.</div>
+
+          <div class="card">
+            <div class="card-title">Поиск</div>
+            <input class="input" placeholder="кофе">
+          </div>
+
+          <div class="card" style="margin-bottom:0">
+            <div class="card-title">Рубрики <span class="state">Кафе, кофейни</span></div>
+            <div class="tree">
+              <div class="node"><span class="caret">▾</span><span class="ico">📁</span> Еда и напитки</div>
+              <div class="node lvl1"><span class="caret">▾</span><span class="ico">📁</span> Кафе и кофейни</div>
+              <div class="node lvl2"><span class="caret"></span><span class="ico">•</span> Кофейни</div>
+              <div class="node lvl2 sel"><span class="caret"></span><span class="ico">•</span> Кофейни самообслуживания</div>
+              <div class="node lvl2"><span class="caret"></span><span class="ico">•</span> Кондитерские</div>
+              <div class="node lvl1"><span class="caret">▸</span><span class="ico">📁</span> Рестораны</div>
+              <div class="node lvl1"><span class="caret">▸</span><span class="ico">📁</span> Бары и пабы</div>
+              <div class="node" style="margin-top:4px"><span class="caret">▸</span><span class="ico">📁</span> Красота и здоровье</div>
+              <div class="node"><span class="caret">▸</span><span class="ico">📁</span> Авто</div>
+            </div>
+          </div>
+
+          <div class="footer">
+            <button class="btn primary">Выбрать</button>
+            <button class="btn">Отмена</button>
+            <div class="grow"></div>
+            <button class="btn">Свернуть всё</button>
+            <button class="btn">Развернуть всё</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- PALETTE -->
+      <div class="card" style="padding:18px">
+        <div class="label">Палитра</div>
+        <div class="palette">
+          <div class="sw"><i style="background:var(--bg)"></i><b>Фон</b><span>#0F1512</span></div>
+          <div class="sw"><i style="background:var(--bg-deep)"></i><b>Поля, лог</b><span>#0A0F0D</span></div>
+          <div class="sw"><i style="background:var(--surface)"></i><b>Карточки</b><span>#151D19</span></div>
+          <div class="sw"><i style="background:var(--accent)"></i><b>Акцент</b><span>#46D07F</span></div>
+          <div class="sw"><i style="background:var(--accent-soft)"></i><b>Акцент тихий</b><span>#17352A</span></div>
+          <div class="sw"><i style="background:var(--danger)"></i><b>Опасное</b><span>#E4675C</span></div>
+          <div class="sw"><i style="background:var(--warning)"></i><b>Внимание</b><span>#E5A94A</span></div>
+          <div class="sw"><i style="background:var(--text)"></i><b>Текст</b><span>#E8F0EC</span></div>
+          <div class="sw"><i style="background:var(--text-muted)"></i><b>Текст 2</b><span>#8CA69A</span></div>
+        </div>
+        <p class="legend">
+          Зелёный акцент 2ГИС сохранён как узнаваемый бренд-цвет, но переведён в тёмную схему:
+          фон #0F1512, поверхности #151D19, акцент #46D07F. Одна и та же палитра задаёт
+          кнопки, чекбоксы, скроллбары, выделение в дереве и подсветку уровней лога.
+        </p>
+      </div>
+
+    </div>
+  </div>
+</div>
+</body>
+</html>
